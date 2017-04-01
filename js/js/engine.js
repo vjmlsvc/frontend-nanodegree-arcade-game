@@ -1,0 +1,269 @@
+/* Engine.js
+ * This file provides the game loop functionality (update entities and render),
+ * draws the initial game board on the screen, and then calls the update and
+ * render methods on your player and entity objects (defined in your app.js).
+ *
+ * A game engine works by drawing the entire game screen over and over, kind of
+ * like a flipbook you may have created as a kid. When your player moves across
+ * the screen, it may look like just that image/character is moving or being
+ * drawn but that is not the case. What's really happening is the entire "scene"
+ * is being drawn over and over, presenting the illusion of animation.
+ *
+ * This engine is available globally via the Engine variable and it also makes
+ * the canvas' context (ctx) object globally available to make writing app.js
+ * a little simpler to work with.
+ */
+
+var Engine = (function(global) {
+    /* Predefine the variables we'll be using within this scope,
+     * create the canvas element, grab the 2D context for that canvas
+     * set the canvas elements height/width and add it to the DOM.
+     */
+    var doc = global.document,
+        win = global.window,
+        canvas = doc.createElement('canvas'),
+        ctx = canvas.getContext('2d'),
+        lastTime;
+
+    canvas.width = 224;
+    canvas.height = 256;
+    doc.body.appendChild(canvas);
+
+    /* This function serves as the kickoff point for the game loop itself
+     * and handles properly calling the update and render methods.
+     */
+    function main() {
+        /* Get our time delta information which is required if your game
+         * requires smooth animation. Because everyone's computer processes
+         * instructions at different speeds we need a constant value that
+         * would be the same for everyone (regardless of how fast their
+         * computer is) - hurray time!
+         */
+        var now = Date.now(),
+            dt = (now - lastTime) / 1000.0;
+
+        /* Call our update/render functions, pass along the time delta to
+         * our update function since it may be used for smooth animation.
+         */
+        update(dt);
+        render();
+
+        /* Set our lastTime variable which is used to determine the time
+         * delta for the next time this function is called.
+         */
+        lastTime = now;
+
+        /* Use the browser's requestAnimationFrame function to call this
+         * function again as soon as the browser is able to draw another
+         * frame.
+         */
+        win.requestAnimationFrame(main);
+    }
+
+    /* This function does some initial setup that should only occur once,
+     * particularly setting the lastTime variable that is required for the
+     * game loop.
+     */
+    function init() {
+        reset();
+        lastTime = Date.now();
+        main();
+    }
+
+    /* This function is called by main (our game loop) and itself calls all
+     * of the functions which may need to update entity's data. Based on how
+     * you implement your collision detection (when two entities occupy the
+     * same space, for instance when your character should die), you may find
+     * the need to add an additional function call here. For now, we've left
+     * it commented out - you may or may not want to implement this
+     * functionality this way (you could just implement collision detection
+     * on the entities themselves within your app.js file).
+     */
+    function update(dt) {
+        updateEntities(dt);
+    }
+
+    /* This is called by the update function and loops through all of the
+     * objects within your allEntities array as defined in app.js and calls
+     * their update() methods. It will then call the update function for your
+     * player object. These update methods should focus purely on updating
+     * the data/properties related to the object. Do your drawing in your
+     * render methods.
+     */
+    function updateEntities(dt) {
+        allEntities.forEach(function(entity) {
+            entity.update(dt);
+        });
+        player.update(dt);
+    }
+
+    /* This function initially draws the "game level", it will then call
+     * the renderEntities function. Remember, this function is called every
+     * game tick (or loop of the game engine) because that's how games work -
+     * they are flipbooks creating the illusion of animation but in reality
+     * they are just drawing the entire screen over and over.
+     */
+    function render() {
+        /* This array holds the relative URL to the image used
+         * for that particular row of the game level.
+         */
+        var rowTiles = [
+                "images/tile-blank.png",
+                "images/tile-blank.png",
+                "images/tile-safe.png",
+                "images/tile-grass.png",
+                "images/tile-grass.png",
+                "images/tile-grass.png",
+                "images/tile-grass.png",
+                "images/tile-grass.png",
+                "images/tile-safe.png",
+                "images/tile-water.png",
+                "images/tile-water.png",
+                "images/tile-water.png",
+                "images/tile-water.png",
+                "images/tile-water.png",
+                "images/tile-safe.png",
+                "images/tile-blank.png"
+            ],
+        /* The following array holds URLs of images used for masking
+         * such as for blending the gap between different tile types.
+         */
+            rowMasks = [
+                null,
+                null,
+                null,
+                "images/tile-safe-bot.png",
+                null,
+                null,
+                null,
+                "images/tile-safe-top.png",
+                null,
+                "images/tile-safe-bot.png",
+                null,
+                null,
+                null,
+                "images/tile-safe-top.png",
+                null,
+                null
+            ],
+            numCols = 14,
+            waterSpeed = -40,
+            isAnim = function(row) {return row >= 9 && row <= 13;};
+
+        /* Loop through the number of rows and columns we've defined above
+         * and, using the rowTiles array, draw the correct image for that
+         * portion of the "grid". in case the case of animated rows the col
+         * starts at -1, to allow for animation to start offscreen.
+         */
+        for (var row = 0; row < rowTiles.length; row++) {
+        // loops through each row
+            for (var col = isAnim(row)? -1: 0; col < numCols; col++) {
+                var shiftAmount = (waterSpeed * (Date.now() / 1000) | 0) % 16;
+                var toShift = isAnim(row)? shiftAmount: 0;
+                /* The drawImage function of the canvas' context element
+                 * requires 3 parameters: the image to draw, the x coordinate
+                 * to start drawing and the y coordinate to start drawing.
+                 * We're using our Resources helpers to refer to our images
+                 * so that we get the benefits of caching these images, since
+                 * we're using them over and over.
+                 */
+                ctx.drawImage(Resources.get(rowTiles[row]),
+                    col * (canvas.width/numCols) + toShift,
+                    row * (canvas.height/rowTiles.length));
+                if (rowMasks[row]){
+                // if there is a rowMasks entry for the current row, add it
+                    ctx.drawImage(Resources.get(rowMasks[row]),
+                        col * (canvas.width/numCols),
+                        row * (canvas.height/rowTiles.length));
+                }
+            }
+        }
+        renderEntities();
+    }
+
+    /* This function is called by the render function and is called on each
+     * game tick. Its purpose is to then call the render functions you have
+     * defined on your entity and player entities within app.js
+     */
+    function renderEntities() {
+        /* Loop through all of the objects within the allEntities array and call
+         * the render function you have defined.
+         */
+        allEntities.forEach(function(entity) {
+            entity.render();
+        });
+
+        player.render();
+    }
+
+    /* This function does nothing but it could have been a good place to
+     * handle game reset states - maybe a new game menu or a game over screen
+     * those sorts of things. It's only called once by the init() method.
+     */
+    function reset() {
+        // noop
+    }
+
+    /* Go ahead and load all of the images we know we're going to need to
+     * draw our game level. Then set init as the callback method, so that
+     * when all of these images are properly loaded our game will start.
+     */
+    Resources.load([
+        "images/TODO/char-bird1-left-0.png",
+        "images/TODO/char-bird1-left-1.png",
+        "images/TODO/char-bird1-right-0.png",
+        "images/TODO/char-bird1-right-1.png",
+        "images/TODO/char-bird2-left-0.png",
+        "images/TODO/char-bird2-left-1.png",
+        "images/TODO/char-bird2-right-0.png",
+        "images/TODO/char-bird2-right-1.png",
+        "images/TODO/char-bird3-left-0.png",
+        "images/TODO/char-bird3-left-1.png",
+        "images/TODO/char-bird3-right-0.png",
+        "images/TODO/char-bird3-right-1.png",
+        "images/TODO/char-bird4-left-0.png",
+        "images/TODO/char-bird4-left-1.png",
+        "images/TODO/char-bird4-right-0.png",
+        "images/TODO/char-bird4-right-1.png",
+        "images/TODO/char-bird5-left-0.png",
+        "images/TODO/char-bird5-left-1.png",
+        "images/TODO/char-bird5-right-0.png",
+        "images/TODO/char-bird5-right-1.png",
+        "images/TODO/char-koi1-right-0.png",
+        "images/TODO/char-koi1-right-1.png",
+        "images/TODO/char-koi1-right-2.png",
+        "images/TODO/char-koi1-right-3.png",
+        "images/TODO/char-koi2-right-0.png",
+        "images/TODO/char-koi2-right-1.png",
+        "images/TODO/char-koi2-right-2.png",
+        "images/TODO/char-koi2-right-3.png",
+        "images/TODO/char-koi3-right-0.png",
+        "images/TODO/char-koi3-right-1.png",
+        "images/TODO/char-koi3-right-2.png",
+        "images/TODO/char-koi3-right-3.png",
+        "images/TODO/char-leaves3-left.png",
+        "images/TODO/char-leaves4-left.png",
+        "images/TODO/char-leaves6-left.png",
+        "images/tile-blank.png",
+        "images/tile-safe-top.png",
+        "images/tile-safe.png",
+        "images/tile-safe-bot.png",
+        "images/tile-water.png",
+        "images/tile-grass.png",
+        "images/char-player-up.png",
+        "images/char-player-upleft.png",
+        "images/char-player-upright.png",
+        "images/char-player-down.png",
+        "images/char-player-downleft.png",
+        "images/char-player-downright.png",
+        "images/char-player-left.png",
+        "images/char-player-right.png"
+    ]);
+    Resources.onReady(init);
+
+    /* Assign the canvas' context object to the global variable (the window
+     * object when run in a browser) so that developers can use it more easily
+     * from within their app.js files.
+     */
+    global.ctx = ctx;
+})(this);
