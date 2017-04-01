@@ -1,7 +1,7 @@
 /* Engine.js
  * This file provides the game loop functionality (update entities and render),
  * draws the initial game board on the screen, and then calls the update and
- * render methods on your player and enemy objects (defined in your app.js).
+ * render methods on your player and entity objects (defined in your app.js).
  *
  * A game engine works by drawing the entire game screen over and over, kind of
  * like a flipbook you may have created as a kid. When your player moves across
@@ -81,21 +81,20 @@ var Engine = (function(global) {
      */
     function update(dt) {
         updateEntities(dt);
-        // checkCollisions();
     }
 
     /* This is called by the update function and loops through all of the
-     * objects within your allEnemies array as defined in app.js and calls
+     * objects within your allEntities array as defined in app.js and calls
      * their update() methods. It will then call the update function for your
      * player object. These update methods should focus purely on updating
      * the data/properties related to the object. Do your drawing in your
      * render methods.
      */
     function updateEntities(dt) {
-        allEnemies.forEach(function(enemy) {
-            enemy.update(dt);
+        allEntities.forEach(function(entity) {
+            entity.update(dt);
         });
-        player.update();
+        player.update(dt);
     }
 
     /* This function initially draws the "game level", it will then call
@@ -108,34 +107,59 @@ var Engine = (function(global) {
         /* This array holds the relative URL to the image used
          * for that particular row of the game level.
          */
-        var rowImages = [
-                'images/tile-blank.png',
-                'images/tile-blank.png',
-                'images/tile-safe.png',
-                'images/tile-water.png',
-                'images/tile-water.png',
-                'images/tile-water.png',
-                'images/tile-water.png',
-                'images/tile-water.png',
-                'images/tile-safe.png',
-                'images/tile-road.png',
-                'images/tile-road.png',
-                'images/tile-road.png',
-                'images/tile-road.png',
-                'images/tile-road.png',
-                'images/tile-safe.png',
-                'images/tile-blank.png'
+        var rowTiles = [
+                "images/tile-blank.png",
+                "images/tile-blank.png",
+                "images/tile-safe.png",
+                "images/tile-grass.png",
+                "images/tile-grass.png",
+                "images/tile-grass.png",
+                "images/tile-grass.png",
+                "images/tile-grass.png",
+                "images/tile-safe.png",
+                "images/tile-water.png",
+                "images/tile-water.png",
+                "images/tile-water.png",
+                "images/tile-water.png",
+                "images/tile-water.png",
+                "images/tile-safe.png",
+                "images/tile-blank.png"
             ],
-            numRows = 16,
+        /* The following array holds URLs of images used for masking
+         * such as for blending the gap between different tile types.
+         */
+            rowMasks = [
+                null,
+                null,
+                null,
+                "images/tile-safe-bot.png",
+                null,
+                null,
+                null,
+                "images/tile-safe-top.png",
+                null,
+                "images/tile-safe-bot.png",
+                null,
+                null,
+                null,
+                "images/tile-safe-top.png",
+                null,
+                null
+            ],
             numCols = 14,
-            row, col;
+            waterSpeed = -40,
+            isAnim = function(row) {return row >= 9 && row <= 13;};
 
         /* Loop through the number of rows and columns we've defined above
-         * and, using the rowImages array, draw the correct image for that
-         * portion of the "grid"
+         * and, using the rowTiles array, draw the correct image for that
+         * portion of the "grid". in case the case of animated rows the col
+         * starts at -1, to allow for animation to start offscreen.
          */
-        for (row = 0; row < numRows; row++) {
-            for (col = 0; col < numCols; col++) {
+        for (var row = 0; row < rowTiles.length; row++) {
+        // loops through each row
+            for (var col = isAnim(row)? -1: 0; col < numCols; col++) {
+                var shiftAmount = (waterSpeed * (Date.now() / 1000) | 0) % 16;
+                var toShift = isAnim(row)? shiftAmount: 0;
                 /* The drawImage function of the canvas' context element
                  * requires 3 parameters: the image to draw, the x coordinate
                  * to start drawing and the y coordinate to start drawing.
@@ -143,24 +167,30 @@ var Engine = (function(global) {
                  * so that we get the benefits of caching these images, since
                  * we're using them over and over.
                  */
-                ctx.drawImage(Resources.get(rowImages[row]),
-                    col * (canvas.width/numCols), row * (canvas.height/(numRows)));
+                ctx.drawImage(Resources.get(rowTiles[row]),
+                    col * (canvas.width/numCols) + toShift,
+                    row * (canvas.height/rowTiles.length));
+                if (rowMasks[row]){
+                // if there is a rowMasks entry for the current row, add it
+                    ctx.drawImage(Resources.get(rowMasks[row]),
+                        col * (canvas.width/numCols),
+                        row * (canvas.height/rowTiles.length));
+                }
             }
         }
-
         renderEntities();
     }
 
     /* This function is called by the render function and is called on each
      * game tick. Its purpose is to then call the render functions you have
-     * defined on your enemy and player entities within app.js
+     * defined on your entity and player entities within app.js
      */
     function renderEntities() {
-        /* Loop through all of the objects within the allEnemies array and call
+        /* Loop through all of the objects within the allEntities array and call
          * the render function you have defined.
          */
-        allEnemies.forEach(function(enemy) {
-            enemy.render();
+        allEntities.forEach(function(entity) {
+            entity.render();
         });
 
         player.render();
@@ -179,24 +209,55 @@ var Engine = (function(global) {
      * when all of these images are properly loaded our game will start.
      */
     Resources.load([
-        'images/tile-blank.png',
-        'images/tile-safe.png',
-        'images/tile-water.png',
-        'images/tile-road.png',
-        'images/char-player-up.png',
-        'images/char-player-down.png',
-        'images/char-player-left.png',
-        'images/char-player-right.png',
-        'images/char-bird1-left.png',
-        'images/char-bird1-right.png',
-        'images/char-bird2-left.png',
-        'images/char-bird2-right.png',
-        'images/char-bird3-left.png',
-        'images/char-bird3-right.png',
-        'images/char-bird4-left.png',
-        'images/char-bird4-right.png',
-        'images/char-bird5-left.png',
-        'images/char-bird5-right.png'
+        "images/TODO/char-bird1-left-0.png",
+        "images/TODO/char-bird1-left-1.png",
+        "images/TODO/char-bird1-right-0.png",
+        "images/TODO/char-bird1-right-1.png",
+        "images/TODO/char-bird2-left-0.png",
+        "images/TODO/char-bird2-left-1.png",
+        "images/TODO/char-bird2-right-0.png",
+        "images/TODO/char-bird2-right-1.png",
+        "images/TODO/char-bird3-left-0.png",
+        "images/TODO/char-bird3-left-1.png",
+        "images/TODO/char-bird3-right-0.png",
+        "images/TODO/char-bird3-right-1.png",
+        "images/TODO/char-bird4-left-0.png",
+        "images/TODO/char-bird4-left-1.png",
+        "images/TODO/char-bird4-right-0.png",
+        "images/TODO/char-bird4-right-1.png",
+        "images/TODO/char-bird5-left-0.png",
+        "images/TODO/char-bird5-left-1.png",
+        "images/TODO/char-bird5-right-0.png",
+        "images/TODO/char-bird5-right-1.png",
+        "images/TODO/char-koi1-right-0.png",
+        "images/TODO/char-koi1-right-1.png",
+        "images/TODO/char-koi1-right-2.png",
+        "images/TODO/char-koi1-right-3.png",
+        "images/TODO/char-koi2-right-0.png",
+        "images/TODO/char-koi2-right-1.png",
+        "images/TODO/char-koi2-right-2.png",
+        "images/TODO/char-koi2-right-3.png",
+        "images/TODO/char-koi3-right-0.png",
+        "images/TODO/char-koi3-right-1.png",
+        "images/TODO/char-koi3-right-2.png",
+        "images/TODO/char-koi3-right-3.png",
+        "images/TODO/char-leaves3-left.png",
+        "images/TODO/char-leaves4-left.png",
+        "images/TODO/char-leaves6-left.png",
+        "images/tile-blank.png",
+        "images/tile-safe-top.png",
+        "images/tile-safe.png",
+        "images/tile-safe-bot.png",
+        "images/tile-water.png",
+        "images/tile-grass.png",
+        "images/char-player-up.png",
+        "images/char-player-upleft.png",
+        "images/char-player-upright.png",
+        "images/char-player-down.png",
+        "images/char-player-downleft.png",
+        "images/char-player-downright.png",
+        "images/char-player-left.png",
+        "images/char-player-right.png"
     ]);
     Resources.onReady(init);
 
