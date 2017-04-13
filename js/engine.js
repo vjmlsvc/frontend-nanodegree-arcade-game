@@ -95,6 +95,7 @@ var Engine = (function(global) {
             entity.update(dt);
         });
         player.update(dt);
+        interface.update(dt);
     }
 
     /* This function initially draws the "game level", it will then call
@@ -122,7 +123,7 @@ var Engine = (function(global) {
                 "images/tile-water.png",
                 "images/tile-water.png",
                 "images/tile-water.png",
-                "images/tile-safe.png",
+                "images/tile-water.png",
                 "images/tile-blank.png"
             ],
         /* The following array holds URLs of images used for masking
@@ -142,13 +143,13 @@ var Engine = (function(global) {
                 null,
                 null,
                 null,
-                "images/tile-safe-top.png",
                 null,
+                "images/tile-end.png",
                 null
             ],
             numCols = 14,
             waterSpeed = -40,
-            isAnim = function(row) {return row >= 9 && row <= 13;};
+            isAnim = function(row) {return row >= 9 && row <= 14;};
 
         /* Loop through the number of rows and columns we've defined above
          * and, using the rowTiles array, draw the correct image for that
@@ -192,8 +193,8 @@ var Engine = (function(global) {
         allEntities.forEach(function(entity) {
             entity.render();
         });
-
         player.render();
+        interface.render();
     }
 
     /* This function does nothing but it could have been a good place to
@@ -209,55 +210,90 @@ var Engine = (function(global) {
      * when all of these images are properly loaded our game will start.
      */
     Resources.load([
-        "images/TODO/char-bird1-left-0.png",
-        "images/TODO/char-bird1-left-1.png",
-        "images/TODO/char-bird1-right-0.png",
-        "images/TODO/char-bird1-right-1.png",
-        "images/TODO/char-bird2-left-0.png",
-        "images/TODO/char-bird2-left-1.png",
-        "images/TODO/char-bird2-right-0.png",
-        "images/TODO/char-bird2-right-1.png",
-        "images/TODO/char-bird3-left-0.png",
-        "images/TODO/char-bird3-left-1.png",
-        "images/TODO/char-bird3-right-0.png",
-        "images/TODO/char-bird3-right-1.png",
-        "images/TODO/char-bird4-left-0.png",
-        "images/TODO/char-bird4-left-1.png",
-        "images/TODO/char-bird4-right-0.png",
-        "images/TODO/char-bird4-right-1.png",
-        "images/TODO/char-bird5-left-0.png",
-        "images/TODO/char-bird5-left-1.png",
-        "images/TODO/char-bird5-right-0.png",
-        "images/TODO/char-bird5-right-1.png",
-        "images/TODO/char-koi1-right-0.png",
-        "images/TODO/char-koi1-right-1.png",
-        "images/TODO/char-koi1-right-2.png",
-        "images/TODO/char-koi1-right-3.png",
-        "images/TODO/char-koi2-right-0.png",
-        "images/TODO/char-koi2-right-1.png",
-        "images/TODO/char-koi2-right-2.png",
-        "images/TODO/char-koi2-right-3.png",
-        "images/TODO/char-koi3-right-0.png",
-        "images/TODO/char-koi3-right-1.png",
-        "images/TODO/char-koi3-right-2.png",
-        "images/TODO/char-koi3-right-3.png",
-        "images/TODO/char-leaves3-left.png",
-        "images/TODO/char-leaves4-left.png",
-        "images/TODO/char-leaves6-left.png",
+        "images/player-up.png",
+        "images/player-upleft.png",
+        "images/player-upright.png",
+        "images/player-down.png",
+        "images/player-downleft.png",
+        "images/player-downright.png",
+        "images/player-left.png",
+        "images/player-right.png",
+        "images/player-death-0.png",
+        "images/player-death-1.png",
+        "images/player-death-2.png",
+        "images/player-death-3.png",
+        "images/player-death-4.png",
+        "images/bird1-left-0.png",
+        "images/bird1-left-1.png",
+        "images/bird1-left-2.png",
+        "images/bird1-left-3.png",
+        "images/bird1-right-0.png",
+        "images/bird1-right-1.png",
+        "images/bird1-right-2.png",
+        "images/bird1-right-3.png",
+        "images/bird2-left-0.png",
+        "images/bird2-left-1.png",
+        "images/bird2-left-2.png",
+        "images/bird2-left-3.png",
+        "images/bird2-right-0.png",
+        "images/bird2-right-1.png",
+        "images/bird2-right-2.png",
+        "images/bird2-right-3.png",
+        "images/bird3-left-0.png",
+        "images/bird3-left-1.png",
+        "images/bird3-left-2.png",
+        "images/bird3-left-3.png",
+        "images/bird3-right-0.png",
+        "images/bird3-right-1.png",
+        "images/bird3-right-2.png",
+        "images/bird3-right-3.png",
+        "images/bird4-left-0.png",
+        "images/bird4-left-1.png",
+        "images/bird4-left-2.png",
+        "images/bird4-left-3.png",
+        "images/bird4-right-0.png",
+        "images/bird4-right-1.png",
+        "images/bird4-right-2.png",
+        "images/bird4-right-3.png",
+        "images/bird5-left-0.png",
+        "images/bird5-left-1.png",
+        "images/bird5-left-2.png",
+        "images/bird5-left-3.png",
+        "images/bird5-right-0.png",
+        "images/bird5-right-1.png",
+        "images/bird5-right-2.png",
+        "images/bird5-right-3.png",
+        "images/koi1-right-0.png",
+        "images/koi1-right-1.png",
+        "images/koi1-right-2.png",
+        "images/koi1-right-3.png",
+        "images/koi2-right-0.png",
+        "images/koi2-right-1.png",
+        "images/koi2-right-2.png",
+        "images/koi2-right-3.png",
+        "images/koi3-right-0.png",
+        "images/koi3-right-1.png",
+        "images/koi3-right-2.png",
+        "images/koi3-right-3.png",
+        "images/leaves3.png",
+        "images/leaves4.png",
+        "images/leaves6.png",
         "images/tile-blank.png",
         "images/tile-safe-top.png",
         "images/tile-safe.png",
         "images/tile-safe-bot.png",
         "images/tile-water.png",
         "images/tile-grass.png",
-        "images/char-player-up.png",
-        "images/char-player-upleft.png",
-        "images/char-player-upright.png",
-        "images/char-player-down.png",
-        "images/char-player-downleft.png",
-        "images/char-player-downright.png",
-        "images/char-player-left.png",
-        "images/char-player-right.png"
+        "images/tile-end.png",
+        "images/hole.png",
+        "images/filled.png",
+        "images/death-0.png",
+        "images/death-1.png",
+        "images/death-2.png",
+        "images/death-3.png",
+        "images/death-4.png",
+        "images/death-5.png",
+        "images/life.png"
     ]);
     Resources.onReady(init);
 
