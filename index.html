@@ -1,9 +1,27 @@
 <!DOCTYPE html>
 <html>
-<head>
+    <head>
     <meta charset="UTF-8">
     <title>Effective JavaScript: Frogger</title>
     <link rel="stylesheet" href="css/style.css">
+    <style type="text/css">
+    * {
+        margin: 0;
+    }
+    canvas {
+        width: calc(3 * 224px);
+        height: calc(3 * 256px);
+        /* code from http://phrogz.net/tmp/canvas_image_zoom.html    */
+        image-rendering:optimizeSpeed;             /* Legal fallback */
+        image-rendering:-moz-crisp-edges;          /* Firefox        */
+        image-rendering:-o-crisp-edges;            /* Opera          */
+        image-rendering:-webkit-optimize-contrast; /* Safari         */
+        image-rendering:optimize-contrast;         /* CSS3 Proposed  */
+        image-rendering:crisp-edges;               /* CSS4 Proposed  */
+        image-rendering:pixelated;                 /* CSS4 Proposed  */
+        -ms-interpolation-mode:nearest-neighbor;   /* IE8+           */
+    }​
+</style>
 </head>
 <body>
     <script src="js/resources.js"></script>
